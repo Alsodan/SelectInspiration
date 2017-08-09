@@ -4,12 +4,14 @@
  *
  * Licensed under the MIT license.
  * http://www.opensource.org/licenses/mit-license.php
- * 
+ *
  * Copyright 2014, Codrops
  * http://www.codrops.com
  */
-;( function( window ) {
-	
+;( function() {
+
+function factory(classie) {
+
 	'use strict';
 
 	/**
@@ -22,24 +24,41 @@
 			el = el.parentNode||false;
 		}
 		return (el!==false);
-	};
-	
+	}
+
 	/**
 	 * extend obj function
 	 */
 	function extend( a, b ) {
-		for( var key in b ) { 
+		for( var key in b ) {
 			if( b.hasOwnProperty( key ) ) {
 				a[key] = b[key];
 			}
 		}
 		return a;
 	}
+	
+	/**
+	 * Set the z-index of the currently open select higher than any others on the page.
+	 * WIthout this, if you have multiple copies of a select box, examples further down 
+	 * the page will stay on top of the options of selects further up the page.
+	 */
+	function setZIndexes() {
+		var allSelects = document.querySelectorAll('.cs-select');
+		for (var j = 0; j < allSelects.length; j++) {
+			allSelects[j].style.zIndex = '1';
+		}
+		
+		var openSelect = document.querySelectorAll('.cs-select.cs-active');
+		if (openSelect.length > 0) {
+			openSelect[0].style.zIndex = '99';
+		}
+	}
 
 	/**
 	 * SelectFx function
 	 */
-	function SelectFx( el, options ) {	
+	function SelectFx( el, options ) {
 		this.el = el;
 		this.options = extend( {}, this.options );
 		extend( this.options, options );
@@ -57,7 +76,7 @@
 		stickyPlaceholder : true,
 		// callback when changing the value
 		onChange : function( val ) { return false; }
-	}
+	};
 
 	/**
 	 * init function
@@ -66,7 +85,7 @@
 	SelectFx.prototype._init = function() {
 		// check if we are using a placeholder for the native select box
 		// we assume the placeholder is disabled and selected by default
-		var selectedOpt = this.el.querySelector( 'option[selected]' );
+		var selectedOpt = this.el.options[this.el.selectedIndex];
 		this.hasDefaultPlaceholder = selectedOpt && selectedOpt.disabled;
 
 		// get selected option (either the first option with attr selected or just the first option)
@@ -77,28 +96,28 @@
 
 		// all options
 		this.selOpts = [].slice.call( this.selEl.querySelectorAll( 'li[data-option]' ) );
-		
+
 		// total options
 		this.selOptsCount = this.selOpts.length;
-		
+
 		// current index
 		this.current = this.selOpts.indexOf( this.selEl.querySelector( 'li.cs-selected' ) ) || -1;
-		
+
 		// placeholder elem
 		this.selPlaceholder = this.selEl.querySelector( 'span.cs-placeholder' );
 
 		// init events
 		this._initEvents();
-	}
+	};
 
 	/**
 	 * creates the structure for the select element
 	 */
 	SelectFx.prototype._createSelectEl = function(elem) {
-		var self = elem, options = '', createOptionHTML = function(el) {
+		var self = this, options = '', createOptionHTML = function(el) {
 			var optclass = '', classes = '', link = '';
 
-			if( el.selected/* && !this.foundSelected && !this.hasDefaultPlaceholder */) {
+			if( el.selected) {
 				classes += 'cs-selected ';
 				elem.foundSelected = true;
 			}
@@ -115,7 +134,17 @@
 				optclass = 'class="' + classes + '" ';
 			}
 
-			return '<li ' + optclass + link + ' data-option data-value="' + el.value + '"><span>' + el.textContent + '</span></li>';
+			var extraAttributes = '';
+
+			[].forEach.call(el.attributes, function(attr) {
+				var name = attr['name'];
+
+				if(name.indexOf('data-') + ['data-option', 'data-value'].indexOf(name) == -1){
+					extraAttributes += name + "='" + attr['value'] + "' ";
+				}
+			} );
+
+			return '<li ' + optclass + link + extraAttributes + ' data-option data-value="' + el.value + '"><span>' + el.textContent + '</span></li>';
 		};
 
 		[].slice.call( this.el.children ).forEach( function(el) {
@@ -130,7 +159,7 @@
 				options += '<li class="cs-optgroup"><span>' + el.label + '</span><ul>';
 				[].slice.call( el.children ).forEach( function(opt) {
 					options += createOptionHTML(opt);
-				} )
+				} );
 				options += '</ul></li>';
 			}
 		} );
@@ -142,7 +171,7 @@
 		this.selEl.innerHTML = '<span class="cs-placeholder">' + this.selectedOpt.textContent + '</span>' + opts_el;
 		this.el.parentNode.appendChild( this.selEl );
 		this.selEl.appendChild( this.el );
-	}
+	};
 
 	/**
 	 * initialize the events
@@ -213,7 +242,7 @@
 					break;
 			}
 		} );
-	}
+	};
 
 	/**
 	 * navigate with up/dpwn keys
@@ -224,7 +253,7 @@
 		}
 
 		var tmpcurrent = typeof this.preSelCurrent != 'undefined' && this.preSelCurrent !== -1 ? this.preSelCurrent : this.current;
-		
+
 		if( dir === 'prev' && tmpcurrent > 0 || dir === 'next' && tmpcurrent < this.selOptsCount - 1 ) {
 			// save pre selected current - if we click on option, or press enter, or press space this is going to be the index of the current option
 			this.preSelCurrent = dir === 'next' ? tmpcurrent + 1 : tmpcurrent - 1;
@@ -233,7 +262,7 @@
 			// add class focus - track which option we are navigating
 			classie.add( this.selOpts[this.preSelCurrent], 'cs-focus' );
 		}
-	}
+	};
 
 	/**
 	 * open/close select
@@ -242,7 +271,7 @@
 	SelectFx.prototype._toggleSelect = function() {
 		// remove focus class if any..
 		this._removeFocus();
-		
+
 		if( this._isOpen() ) {
 			if( this.current !== -1 ) {
 				// update placeholder text
@@ -257,7 +286,9 @@
 			}
 			classie.add( this.selEl, 'cs-active' );
 		}
-	}
+		
+		setZIndexes();
+	};
 
 	/**
 	 * change option - the new value is set
@@ -298,30 +329,37 @@
                     }
 
                     // callback
-                    this.options.onChange( this.el.value );
-            }
-	}
+                    this.options.onChange( this.el );
+                }
+	};
 
 	/**
 	 * returns true if select element is opened
 	 */
 	SelectFx.prototype._isOpen = function(opt) {
 		return classie.has( this.selEl, 'cs-active' );
-	}
+	};
 
 	/**
 	 * removes the focus class from the option
 	 */
 	SelectFx.prototype._removeFocus = function(opt) {
-		var focusEl = this.selEl.querySelector( 'li.cs-focus' )
+		var focusEl = this.selEl.querySelector( 'li.cs-focus' );
 		if( focusEl ) {
 			classie.remove( focusEl, 'cs-focus' );
 		}
+	};
+
+	return SelectFx;
+
+}
+
+	if ( typeof define === 'function' && define.amd ) {
+		// AMD
+		define( ["classie"], factory );
+	} else {
+		// add to global namespace
+		window.SelectFx = factory(window.classie);
 	}
 
-	/**
-	 * add to global namespace
-	 */
-	window.SelectFx = SelectFx;
-
-} )( window );
+} )();
