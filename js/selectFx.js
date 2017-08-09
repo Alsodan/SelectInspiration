@@ -4,14 +4,12 @@
  *
  * Licensed under the MIT license.
  * http://www.opensource.org/licenses/mit-license.php
- *
+ * 
  * Copyright 2014, Codrops
  * http://www.codrops.com
  */
-;( function() {
-
-function factory(classie) {
-
+;( function( window ) {
+	
 	'use strict';
 
 	/**
@@ -24,41 +22,24 @@ function factory(classie) {
 			el = el.parentNode||false;
 		}
 		return (el!==false);
-	}
-
+	};
+	
 	/**
 	 * extend obj function
 	 */
 	function extend( a, b ) {
-		for( var key in b ) {
+		for( var key in b ) { 
 			if( b.hasOwnProperty( key ) ) {
 				a[key] = b[key];
 			}
 		}
 		return a;
 	}
-	
-	/**
-	 * Set the z-index of the currently open select higher than any others on the page.
-	 * WIthout this, if you have multiple copies of a select box, examples further down 
-	 * the page will stay on top of the options of selects further up the page.
-	 */
-	function setZIndexes() {
-		var allSelects = document.querySelectorAll('.cs-select');
-		for (var j = 0; j < allSelects.length; j++) {
-			allSelects[j].style.zIndex = '1';
-		}
-		
-		var openSelect = document.querySelectorAll('.cs-select.cs-active');
-		if (openSelect.length > 0) {
-			openSelect[0].style.zIndex = '99';
-		}
-	}
 
 	/**
 	 * SelectFx function
 	 */
-	function SelectFx( el, options ) {
+	function SelectFx( el, options ) {	
 		this.el = el;
 		this.options = extend( {}, this.options );
 		extend( this.options, options );
@@ -76,7 +57,7 @@ function factory(classie) {
 		stickyPlaceholder : true,
 		// callback when changing the value
 		onChange : function( val ) { return false; }
-	};
+	}
 
 	/**
 	 * init function
@@ -85,41 +66,41 @@ function factory(classie) {
 	SelectFx.prototype._init = function() {
 		// check if we are using a placeholder for the native select box
 		// we assume the placeholder is disabled and selected by default
-		var selectedOpt = this.el.options[this.el.selectedIndex];
+		var selectedOpt = this.el.querySelector( 'option[selected]' );
 		this.hasDefaultPlaceholder = selectedOpt && selectedOpt.disabled;
 
 		// get selected option (either the first option with attr selected or just the first option)
 		this.selectedOpt = selectedOpt || this.el.querySelector( 'option' );
 
 		// create structure
-		this._createSelectEl();
+		this._createSelectEl(this);
 
 		// all options
 		this.selOpts = [].slice.call( this.selEl.querySelectorAll( 'li[data-option]' ) );
-
+		
 		// total options
 		this.selOptsCount = this.selOpts.length;
-
+		
 		// current index
 		this.current = this.selOpts.indexOf( this.selEl.querySelector( 'li.cs-selected' ) ) || -1;
-
+		
 		// placeholder elem
 		this.selPlaceholder = this.selEl.querySelector( 'span.cs-placeholder' );
 
 		// init events
 		this._initEvents();
-	};
+	}
 
 	/**
 	 * creates the structure for the select element
 	 */
-	SelectFx.prototype._createSelectEl = function() {
-		var self = this, options = '', createOptionHTML = function(el) {
+	SelectFx.prototype._createSelectEl = function(elem) {
+		var self = elem, options = '', createOptionHTML = function(el) {
 			var optclass = '', classes = '', link = '';
 
-			if( el.selectedOpt && !this.foundSelected && !this.hasDefaultPlaceholder ) {
+			if( el.selected/* && !this.foundSelected && !this.hasDefaultPlaceholder */) {
 				classes += 'cs-selected ';
-				this.foundSelected = true;
+				elem.foundSelected = true;
 			}
 			// extra classes
 			if( el.getAttribute( 'data-class' ) ) {
@@ -134,17 +115,7 @@ function factory(classie) {
 				optclass = 'class="' + classes + '" ';
 			}
 
-			var extraAttributes = '';
-
-			[].forEach.call(el.attributes, function(attr) {
-				var name = attr['name'];
-
-				if(name.indexOf('data-') + ['data-option', 'data-value'].indexOf(name) == -1){
-					extraAttributes += name + "='" + attr['value'] + "' ";
-				}
-			} );
-
-			return '<li ' + optclass + link + extraAttributes + ' data-option data-value="' + el.value + '"><span>' + el.textContent + '</span></li>';
+			return '<li ' + optclass + link + ' data-option data-value="' + el.value + '"><span>' + el.textContent + '</span></li>';
 		};
 
 		[].slice.call( this.el.children ).forEach( function(el) {
@@ -159,7 +130,7 @@ function factory(classie) {
 				options += '<li class="cs-optgroup"><span>' + el.label + '</span><ul>';
 				[].slice.call( el.children ).forEach( function(opt) {
 					options += createOptionHTML(opt);
-				} );
+				} )
 				options += '</ul></li>';
 			}
 		} );
@@ -171,7 +142,7 @@ function factory(classie) {
 		this.selEl.innerHTML = '<span class="cs-placeholder">' + this.selectedOpt.textContent + '</span>' + opts_el;
 		this.el.parentNode.appendChild( this.selEl );
 		this.selEl.appendChild( this.el );
-	};
+	}
 
 	/**
 	 * initialize the events
@@ -242,7 +213,7 @@ function factory(classie) {
 					break;
 			}
 		} );
-	};
+	}
 
 	/**
 	 * navigate with up/dpwn keys
@@ -253,7 +224,7 @@ function factory(classie) {
 		}
 
 		var tmpcurrent = typeof this.preSelCurrent != 'undefined' && this.preSelCurrent !== -1 ? this.preSelCurrent : this.current;
-
+		
 		if( dir === 'prev' && tmpcurrent > 0 || dir === 'next' && tmpcurrent < this.selOptsCount - 1 ) {
 			// save pre selected current - if we click on option, or press enter, or press space this is going to be the index of the current option
 			this.preSelCurrent = dir === 'next' ? tmpcurrent + 1 : tmpcurrent - 1;
@@ -262,7 +233,7 @@ function factory(classie) {
 			// add class focus - track which option we are navigating
 			classie.add( this.selOpts[this.preSelCurrent], 'cs-focus' );
 		}
-	};
+	}
 
 	/**
 	 * open/close select
@@ -271,7 +242,7 @@ function factory(classie) {
 	SelectFx.prototype._toggleSelect = function() {
 		// remove focus class if any..
 		this._removeFocus();
-
+		
 		if( this._isOpen() ) {
 			if( this.current !== -1 ) {
 				// update placeholder text
@@ -286,9 +257,7 @@ function factory(classie) {
 			}
 			classie.add( this.selEl, 'cs-active' );
 		}
-		
-		setZIndexes();
-	};
+	}
 
 	/**
 	 * change option - the new value is set
@@ -303,61 +272,56 @@ function factory(classie) {
 		// current option
 		var opt = this.selOpts[ this.current ];
 
-		// update current selected value
-		this.selPlaceholder.textContent = opt.textContent;
+                if (this.el.value !== opt.getAttribute( 'data-value' )) {
+                    // update current selected value
+                    this.selPlaceholder.textContent = opt.textContent;
 
-		// change native select element´s value
-		this.el.value = opt.getAttribute( 'data-value' );
+                    // change native select element´s value
+                    this.el.value = opt.getAttribute( 'data-value' );
 
-		// remove class cs-selected from old selected option and add it to current selected option
-		var oldOpt = this.selEl.querySelector( 'li.cs-selected' );
-		if( oldOpt ) {
-			classie.remove( oldOpt, 'cs-selected' );
-		}
-		classie.add( opt, 'cs-selected' );
+                    // remove class cs-selected from old selected option and add it to current selected option
+                    var oldOpt = this.selEl.querySelector( 'li.cs-selected' );
+                    if( oldOpt ) {
+                            classie.remove( oldOpt, 'cs-selected' );
+                    }
+                    classie.add( opt, 'cs-selected' );
 
-		// if there´s a link defined
-		if( opt.getAttribute( 'data-link' ) ) {
-			// open in new tab?
-			if( this.options.newTab ) {
-				window.open( opt.getAttribute( 'data-link' ), '_blank' );
-			}
-			else {
-				window.location = opt.getAttribute( 'data-link' );
-			}
-		}
+                    // if there´s a link defined
+                    if( opt.getAttribute( 'data-link' ) ) {
+                            // open in new tab?
+                            if( this.options.newTab ) {
+                                    window.open( opt.getAttribute( 'data-link' ), '_blank' );
+                            }
+                            else {
+                                    window.location = opt.getAttribute( 'data-link' );
+                            }
+                    }
 
-		// callback
-		this.options.onChange( this.el.value );
-	};
+                    // callback
+                    this.options.onChange( this.el.value );
+            }
+	}
 
 	/**
 	 * returns true if select element is opened
 	 */
 	SelectFx.prototype._isOpen = function(opt) {
 		return classie.has( this.selEl, 'cs-active' );
-	};
+	}
 
 	/**
 	 * removes the focus class from the option
 	 */
 	SelectFx.prototype._removeFocus = function(opt) {
-		var focusEl = this.selEl.querySelector( 'li.cs-focus' );
+		var focusEl = this.selEl.querySelector( 'li.cs-focus' )
 		if( focusEl ) {
 			classie.remove( focusEl, 'cs-focus' );
 		}
-	};
-
-	return SelectFx;
-
-}
-
-	if ( typeof define === 'function' && define.amd ) {
-		// AMD
-		define( ["classie"], factory );
-	} else {
-		// add to global namespace
-		window.SelectFx = factory(window.classie);
 	}
 
-} )();
+	/**
+	 * add to global namespace
+	 */
+	window.SelectFx = SelectFx;
+
+} )( window );
